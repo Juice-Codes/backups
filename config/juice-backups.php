@@ -4,6 +4,8 @@ return [
 
     /*
      * Prefix of backup file filename.
+     *
+     * Do not contain "-" at the end.
      */
 
     'name' => env('APP_NAME', 'juice'),
