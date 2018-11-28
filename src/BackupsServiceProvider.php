@@ -5,6 +5,7 @@ namespace Juice\Backups;
 use Illuminate\Support\ServiceProvider;
 use Juice\Backups\Commands\CleanupCommand;
 use Juice\Backups\Commands\RunCommand;
+use Juice\Backups\Commands\SetupCommand;
 
 class BackupsServiceProvider extends ServiceProvider
 {
@@ -29,6 +30,7 @@ class BackupsServiceProvider extends ServiceProvider
             $this->commands([
                 CleanupCommand::class,
                 RunCommand::class,
+                SetupCommand::class,
             ]);
         }
     }
