@@ -1,0 +1,44 @@
+{
+    "name": "juice/backups",
+    "description": "Backup database and application.",
+    "keywords": ["juice.codes", "laravel", "lumen", "backup"],
+    "license": "proprietary",
+    "require": {
+        "php": "^7.2",
+        "ext-zlib": "*",
+        "illuminate/console": "5.7.*",
+        "illuminate/support": "5.7.*",
+        "nesbot/carbon": "1.36.*",
+        "spatie/db-dumper": "2.11.*",
+        "symfony/finder": "4.1.*",
+        "wapmorgan/unified-archive": "0.1.*"
+    },
+    "require-dev": {
+        "orchestra/testbench": "3.7.*",
+        "phpunit/phpunit": "7.4.*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Juice\\Backups\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Juice\\Tests\\": "tests/"
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Juice\\Backups\\BackupsServiceProvider"
+            ]
+        }
+    }
+}
