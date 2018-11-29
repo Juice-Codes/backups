@@ -31,22 +31,14 @@ class CleanupCommand extends Command
     protected $config;
 
     /**
-     * Constructor.
-     */
-    public function __construct()
-    {
-        parent::__construct();
-
-        $this->config = config('juice-backups');
-    }
-
-    /**
      * Execute the console command.
      *
      * @return void
      */
     public function handle(): void
     {
+        $this->config = config('juice-backups');
+
         if (!is_dir($this->config['destination'])) {
             $this->warn('Backup directory does not exist.');
             return;
