@@ -6,10 +6,10 @@ use Carbon\Carbon;
 use Exception;
 use Generator;
 use Illuminate\Console\Command;
-use Spatie\DbDumper\Compressors\GzipCompressor;
+use Phar;
+use PharData;
 use Spatie\DbDumper\DbDumper;
 use Symfony\Component\Finder\Finder;
-use wapmorgan\UnifiedArchive\TarArchive;
 
 class RunCommand extends Command
 {
@@ -35,16 +35,6 @@ class RunCommand extends Command
     protected $config;
 
     /**
-     * Constructor.
-     */
-    public function __construct()
-    {
-        parent::__construct();
-
-        $this->config = config('juice-backups');
-    }
-
-    /**
      * Execute the console command.
      *
      * @return void
@@ -53,24 +43,34 @@ class RunCommand extends Command
      */
     public function handle(): void
     {
+        $this->config = config('juice-backups');
+
         chdir('..');
 
-        $archive = new TarArchive(sprintf(
+        $name = sprintf(
             '%s/%s-%s.tar.gz',
             $this->config['destination'],
             trim($this->config['name'], '-'),
             Carbon::now()->format('Y-m-d-H-i-s')
-        ), 'tgz');
+        );
 
-        foreach ($this->paths() as $path) {
-            is_dir($path) ? $archive->addDirectory($path) : $archive->addFile($path);
+        $phar = new PharData(sprintf('%s.tar', tempnam(sys_get_temp_dir(), str_random(6))));
+
+        foreach (($paths = $this->paths()) as $path) {
+            is_dir($path) ? $phar->addEmptyDir($path) : $phar->addFile($path);
         }
 
         if (!is_null($db = $this->database())) {
-            $archive->addFile($db['path'], $db['name']);
+            $phar->addFile($db['path'], $db['name']);
+            unlink($db['path']);
         }
 
-        $this->info(PHP_EOL.'Application and database backup successfully.');
+        if (!empty($paths) || !is_null($db)) {
+            rename($phar->compress(Phar::GZ)->getPath(), $name);
+            unlink($phar->getPath());
+        }
+
+        $this->info('Application and database backup successfully.');
     }
 
     /**
@@ -100,7 +100,7 @@ class RunCommand extends Command
         }
 
         return array_map(function ($path) {
-            return str_replace(getcwd(), '.', $path);
+            return ltrim(str_replace(getcwd(), '', realpath($path)), '/');
         }, array_values(array_diff(
             array_unique($paths),
             array_filter($this->config['excludes'], 'is_file')
@@ -195,12 +195,11 @@ class RunCommand extends Command
         $dumper->setDbName($db['database'])
             ->setUserName($db['username'])
             ->setPassword($db['password'])
-            ->useCompressor(new GzipCompressor)
             ->dumpToFile($path);
 
         return [
             'path' => $path,
-            'name' => sprintf('%s.sql.gz', $db['database']),
+            'name' => sprintf('%s.sql', $db['database']),
         ];
     }
 
