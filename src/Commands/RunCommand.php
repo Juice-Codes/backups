@@ -6,10 +6,10 @@ use Carbon\Carbon;
 use Exception;
 use Generator;
 use Illuminate\Console\Command;
-use Phar;
 use PharData;
 use Spatie\DbDumper\DbDumper;
 use Symfony\Component\Finder\Finder;
+use Symfony\Component\Process\Process;
 
 class RunCommand extends Command
 {
@@ -66,7 +66,14 @@ class RunCommand extends Command
         }
 
         if (!empty($paths) || !is_null($db)) {
-            rename($phar->compress(Phar::GZ)->getPath(), $name);
+            $archive = $this->compress($phar->getPath());
+
+            if (is_null($archive)) {
+                $this->error('Fail to use gzip to compress backup file.');
+                return;
+            }
+
+            rename($archive, $name);
             unlink($phar->getPath());
         }
 
@@ -230,5 +237,29 @@ class RunCommand extends Command
         $class = sprintf('\Spatie\DbDumper\Databases\%s', $mapping[$key]);
 
         return new $class;
+    }
+
+    /**
+     * Compress tar file using gzip.
+     *
+     * @param string $path
+     *
+     * @return string|null
+     */
+    protected function compress(string $path): ?string
+    {
+        $process = new Process(['gzip', '--best', '--keep', $path]);
+
+        $process->setTimeout(null);
+
+        $process->start();
+
+        $process->wait();
+
+        if (!$process->isSuccessful()) {
+            return null;
+        }
+
+        return sprintf('%s.gz', $path);
     }
 }
