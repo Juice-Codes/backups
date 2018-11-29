@@ -4,6 +4,7 @@ namespace Juice\Backups\Commands;
 
 use Carbon\Carbon;
 use Illuminate\Console\Command;
+use Illuminate\Support\Collection;
 use Symfony\Component\Finder\Finder;
 
 class CleanupCommand extends Command
@@ -23,18 +24,35 @@ class CleanupCommand extends Command
     protected $description = 'Cleanup outdated backups.';
 
     /**
+     * Juice backups config.
+     *
+     * @var array
+     */
+    protected $config;
+
+    /**
+     * Constructor.
+     */
+    public function __construct()
+    {
+        parent::__construct();
+
+        $this->config = config('juice-backups');
+    }
+
+    /**
      * Execute the console command.
      *
      * @return void
      */
     public function handle(): void
     {
-        if (!is_dir(config('juice-backups.destination'))) {
+        if (!is_dir($this->config['destination'])) {
             $this->warn('Backup directory does not exist.');
             return;
         }
 
-        $backups = $this->getBackups();
+        $backups = $this->backups();
 
         if ($backups->isEmpty()) {
             $this->info('No backups need to be cleanup.');
@@ -72,34 +90,47 @@ class CleanupCommand extends Command
         $this->info('Backup cleanup successfully.');
     }
 
-    protected function getBackups()
+    /**
+     * Get backup files collection.
+     *
+     * @return Collection
+     */
+    protected function backups(): Collection
     {
-        $finder = (new Finder)
-            ->files()
-            ->depth(0)
-            ->name(sprintf('%s-*', rtrim(config('juice-backups.name'), '-')))
-            ->in(config('juice-backups.destination'));
-
         $backups = collect();
 
-        foreach ($finder->getIterator() as $file) {
-            $time = Carbon::createFromFormat(
-                'Y-m-d-H-i-s',
-                substr(strstr($file->getFilename(), '.', true), 6)
-            );
+        foreach ($this->backupIterator() as $file) {
+            $time = Carbon::createFromFormat('Y-m-d-H-i-s', substr(
+                strstr($file->getFilename(), '.', true),
+                strlen(rtrim($this->config['name'], '-')) + 1
+            ));
 
             if ($time->diffInHours() < 24) {
                 continue;
             }
 
-            $backups->push([
+            $backups->put($time->timestamp, [
                 'date' => $time->toDateString(),
                 'in-month' => $time->diffInDays() <= 31,
                 'path' => $file->getPathname(),
-                'timestamp' => $time->timestamp,
             ]);
         }
 
-        return $backups->sortBy('timestamp')->values();
+        return $backups->sortKeys()->values();
+    }
+
+    /**
+     * Get backup files iterator.
+     *
+     * @return \Iterator|\Symfony\Component\Finder\SplFileInfo[]
+     */
+    protected function backupIterator()
+    {
+        return (new Finder)
+            ->files()
+            ->depth(0)
+            ->name(sprintf('%s-*', rtrim($this->config['name'], '-')))
+            ->in($this->config['destination'])
+            ->getIterator() ;
     }
 }

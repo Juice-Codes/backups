@@ -40,20 +40,19 @@ class CleanupCommandsTest extends TestCase
             ->expectsOutput('Backup cleanup successfully.')
             ->assertExitCode(0);
 
+        $this->artisan('backup:cleanup')
+            ->assertExitCode(0);
+
         $exists = require_once __DIR__.'/vendor/exists.php';
         
         $deleted = require_once __DIR__.'/vendor/deleted.php';
 
         foreach ($exists as $file) {
-            $path = sprintf('%s/%s', config('juice-backups.destination'), $file);
-
-            $this->assertFileExists($path);
+            $this->assertFileExists(sprintf('%s/%s', $dir, $file));
         }
 
         foreach ($deleted as $file) {
-            $path = sprintf('%s/%s', config('juice-backups.destination'), $file);
-
-            $this->assertFileNotExists($path);
+            $this->assertFileNotExists(sprintf('%s/%s', $dir, $file));
         }
 
         $this->assertSame(count($files), count($exists) + count($deleted));
