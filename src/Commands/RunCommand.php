@@ -96,18 +96,20 @@ class RunCommand extends Command
                 ->exclude($this->excludes($directory));
 
             foreach ($finder->getIterator() as $file) {
-                $paths[] = $file->getPathname();
+                $paths[] = realpath($file->getPathname());
             }
         }
 
         $files = array_filter($this->config['includes'], 'is_file');
 
         if (!empty($files)) {
-            array_push($paths, ...$files);
+            array_push($paths, ...array_map('realpath', $files));
         }
 
         return array_map(function ($path) {
-            return ltrim(str_replace(getcwd(), '', realpath($path)), '/');
+            return starts_with($path, getcwd())
+                ? substr_replace($path, '', 0, strlen(getcwd()) + 1)
+                : $path;
         }, array_values(array_diff(
             array_unique($paths),
             array_filter($this->config['excludes'], 'is_file')
