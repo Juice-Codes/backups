@@ -15,6 +15,7 @@ class TestCase extends \Orchestra\Testbench\TestCase
     protected function tearDown()
     {
         File::deleteDirectory(storage_path('jb-backups'));
+        File::delete(File::files(__DIR__.'/temp'));
 
         parent::tearDown();
     }
@@ -29,5 +30,25 @@ class TestCase extends \Orchestra\Testbench\TestCase
     protected function getPackageProviders($app)
     {
         return [BackupsServiceProvider::class];
+    }
+
+    /**
+     * Define environment setup.
+     *
+     * @param \Illuminate\Foundation\Application $app
+     *
+     * @return void
+     */
+    protected function getEnvironmentSetUp($app)
+    {
+        $app['config']->set('database.default', 'sqlite');
+
+        $app['config']->set('database.connections.sqlite', [
+            'driver'   => 'sqlite',
+            'database' => ':memory:',
+            'username' => 'testing',
+            'password' => 'testing',
+            'prefix'   => '',
+        ]);
     }
 }
