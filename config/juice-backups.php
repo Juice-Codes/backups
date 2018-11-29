@@ -5,7 +5,7 @@ return [
     /*
      * Prefix of backup file filename.
      *
-     * Do not contain "-" at the end.
+     * ＊：Do not contain "-" at the end.
      */
 
     'name' => env('APP_NAME', 'juice'),
@@ -22,6 +22,10 @@ return [
 
     /*
      * Files and directories that will be backup.
+     *
+     * ＊：If your backup destination is in includes path,
+     * make sure add it to excludes path. We doesn't auto
+     * exclude it.
      */
 
     'includes' => [
