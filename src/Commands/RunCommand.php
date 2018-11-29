@@ -3,6 +3,7 @@
 namespace Juice\Backups\Commands;
 
 use Carbon\Carbon;
+use Exception;
 use Generator;
 use Illuminate\Console\Command;
 use Spatie\DbDumper\Compressors\GzipCompressor;
@@ -47,16 +48,45 @@ class RunCommand extends Command
      * Execute the console command.
      *
      * @return void
+     *
+     * @throws Exception
      */
     public function handle(): void
     {
+        chdir('..');
+
+        $archive = new TarArchive(sprintf(
+            '%s/%s-%s.tar.gz',
+            $this->config['destination'],
+            trim($this->config['name'], '-'),
+            Carbon::now()->format('Y-m-d-H-i-s')
+        ), 'tgz');
+
+        foreach ($this->paths() as $path) {
+            is_dir($path) ? $archive->addDirectory($path) : $archive->addFile($path);
+        }
+
+        if (!is_null($db = $this->database())) {
+            $archive->addFile($db['path'], $db['name']);
+        }
+
+        $this->info(PHP_EOL.'Application and database backup successfully.');
+    }
+
+    /**
+     * Get backup files path.
+     *
+     * @return array
+     */
+    protected function paths(): array
+    {
         $paths = [];
 
-        foreach ($this->getIncludes() as $directory) {
+        foreach ($this->includes() as $directory) {
             $finder = (new Finder)
                 ->ignoreDotFiles(false)
                 ->in($directory)
-                ->exclude($this->getExcludes($directory));
+                ->exclude($this->excludes($directory));
 
             foreach ($finder->getIterator() as $file) {
                 $paths[] = $file->getPathname();
@@ -69,43 +99,12 @@ class RunCommand extends Command
             array_push($paths, ...$files);
         }
 
-        $paths = array_map(function ($path) {
-            return str_replace(realpath(base_path('../')), '.', $path);
+        return array_map(function ($path) {
+            return str_replace(getcwd(), '.', $path);
         }, array_values(array_diff(
             array_unique($paths),
             array_filter($this->config['excludes'], 'is_file')
         )));
-
-        if (!is_dir($this->config['destination'])) {
-            mkdir($this->config['destination'], 0777, true);
-        }
-
-        $progress = $this->output->createProgressBar(count($paths) + 1);
-
-        $progress->start();
-
-        chdir('../');
-
-        $archive = new TarArchive(sprintf(
-            '%s/%s-%s.tar.gz',
-            $this->config['destination'],
-            trim($this->config['name'], '-'),
-            Carbon::now()->format('Y-m-d-H-i-s')
-        ), 'tgz');
-
-        foreach ($paths as $path) {
-            is_dir($path) ? $archive->addDirectory($path) : $archive->addFile($path);
-
-            $progress->advance();
-        }
-
-        if (!is_null($db = $this->database())) {
-            $archive->addFile($db['path'], $db['name']);
-        }
-
-        $progress->finish();
-
-        $this->info(PHP_EOL.'Application and database backup successfully.');
     }
 
     /**
@@ -113,9 +112,9 @@ class RunCommand extends Command
      *
      * @return Generator
      */
-    protected function getIncludes(): Generator
+    protected function includes(): Generator
     {
-        $dirs = $this->getDirectories('includes');
+        $dirs = $this->directories('includes');
 
         // yield directories which are not subdirectory
         $offset = 0;
@@ -140,9 +139,9 @@ class RunCommand extends Command
      *
      * @return array
      */
-    public function getExcludes(string $parent): array
+    public function excludes(string $parent): array
     {
-        $dirs = $this->getDirectories('excludes');
+        $dirs = $this->directories('excludes');
 
         foreach ($dirs as $dir) {
             if (starts_with($dir, $parent)) {
@@ -160,7 +159,7 @@ class RunCommand extends Command
      *
      * @return array
      */
-    protected function getDirectories(string $type): array
+    protected function directories(string $type): array
     {
         $dirs = array_map(function ($dir) {
             return sprintf('%s/', rtrim($dir, '/'));
