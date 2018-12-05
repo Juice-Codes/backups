@@ -57,11 +57,6 @@ class RunCommand extends Command
 
         $phar = new PharData(sprintf('%s.tar', tempnam(sys_get_temp_dir(), str_random(6))));
 
-        if (!is_null($db = $this->database())) {
-            $phar->addFile($db['path'], $db['name']);
-            unlink($db['path']);
-        }
-
         $paths = [];
 
         foreach ($this->paths() as $path) {
@@ -69,6 +64,11 @@ class RunCommand extends Command
         }
 
         $phar->buildFromIterator(new ArrayIterator(array_combine($paths, $paths)));
+
+        if (!is_null($db = $this->database())) {
+            $phar->addFile($db['path'], $db['name']);
+            unlink($db['path']);
+        }
 
         if (!empty($paths) || !is_null($db)) {
             $archive = $this->compress($phar->getPath());
