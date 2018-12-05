@@ -2,6 +2,7 @@
 
 namespace Juice\Backups\Commands;
 
+use ArrayIterator;
 use Carbon\Carbon;
 use Exception;
 use Generator;
@@ -56,14 +57,18 @@ class RunCommand extends Command
 
         $phar = new PharData(sprintf('%s.tar', tempnam(sys_get_temp_dir(), str_random(6))));
 
-        foreach (($paths = $this->paths()) as $path) {
-            is_dir($path) ? $phar->addEmptyDir($path) : $phar->addFile($path);
-        }
-
         if (!is_null($db = $this->database())) {
             $phar->addFile($db['path'], $db['name']);
             unlink($db['path']);
         }
+
+        $paths = [];
+
+        foreach ($this->paths() as $path) {
+            is_dir($path) ? $phar->addEmptyDir($path) : ($paths[] = $path);
+        }
+
+        $phar->buildFromIterator(new ArrayIterator(array_combine($paths, $paths)));
 
         if (!empty($paths) || !is_null($db)) {
             $archive = $this->compress($phar->getPath());
