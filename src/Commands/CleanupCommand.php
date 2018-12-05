@@ -51,7 +51,11 @@ class CleanupCommand extends Command
             return;
         }
 
-        [$beforeLastMonth, $inThePastMonth] = $backups->groupBy('in-month');
+        $groups = $backups->groupBy('in-month');
+
+        $beforeLastMonth = $groups->get(0, collect());
+
+        $inThePastMonth = $groups->get(1, collect());
 
         // backups that before last month will only preserve every 7 days
         if ($beforeLastMonth->count() > 1) {
