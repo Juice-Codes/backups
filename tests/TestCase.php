@@ -2,6 +2,7 @@
 
 namespace Juice\Tests;
 
+use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\File;
 use Juice\Backups\BackupsServiceProvider;
 
@@ -12,7 +13,7 @@ class TestCase extends \Orchestra\Testbench\TestCase
      *
      * @return void
      */
-    protected function tearDown()
+    protected function tearDown(): void
     {
         File::deleteDirectory(storage_path('jb-backups'));
         File::delete(File::files(__DIR__.'/temp'));
@@ -23,7 +24,7 @@ class TestCase extends \Orchestra\Testbench\TestCase
     /**
      * Get package providers.
      *
-     * @param \Illuminate\Foundation\Application $app
+     * @param Application $app
      *
      * @return array
      */
@@ -35,20 +36,12 @@ class TestCase extends \Orchestra\Testbench\TestCase
     /**
      * Define environment setup.
      *
-     * @param \Illuminate\Foundation\Application $app
+     * @param Application $app
      *
      * @return void
      */
     protected function getEnvironmentSetUp($app)
     {
-        $app['config']->set('database.default', 'sqlite');
-
-        $app['config']->set('database.connections.sqlite', [
-            'driver'   => 'sqlite',
-            'database' => ':memory:',
-            'username' => 'testing',
-            'password' => 'testing',
-            'prefix'   => '',
-        ]);
+        $app['config']->set('database.default', 'testing');
     }
 }

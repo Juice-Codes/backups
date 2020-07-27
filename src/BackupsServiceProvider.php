@@ -6,6 +6,7 @@ use Illuminate\Support\ServiceProvider;
 use Juice\Backups\Commands\CleanupCommand;
 use Juice\Backups\Commands\RunCommand;
 use Juice\Backups\Commands\SetupCommand;
+use Laravel\Lumen\Application;
 
 class BackupsServiceProvider extends ServiceProvider
 {
@@ -16,7 +17,7 @@ class BackupsServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        if ($this->app instanceof \Laravel\Lumen\Application) {
+        if ($this->app instanceof Application) {
             $this->app->configure('juice-backups');
         } else {
             if ($this->app->runningInConsole()) {

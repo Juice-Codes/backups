@@ -21,7 +21,7 @@ class RunCommandsTest extends TestCase
      *
      * @return void
      */
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
 
@@ -54,7 +54,7 @@ class RunCommandsTest extends TestCase
             ->files()
             ->ignoreDotFiles(false)
             ->exclude(array_map('basename', config('juice-backups.excludes')))
-            ->count() + 1; // database backup will count 1
+            ->count(); // database backup will count 1
 
         $this->assertSame($except, iterator_count(new RecursiveIteratorIterator(new PharData($this->path))));
     }
@@ -90,14 +90,14 @@ class RunCommandsTest extends TestCase
 
         $this->artisan('backup:run')->assertExitCode(0);
 
-        $this->assertSame(5, iterator_count(new RecursiveIteratorIterator(new PharData($this->path))));
+        $this->assertSame(4, iterator_count(new RecursiveIteratorIterator(new PharData($this->path))));
     }
 
     public function test_database_backup()
     {
         $this->loadLaravelMigrations();
 
-        $this->artisan('migrate', ['--database' => 'sqlite'])->run();
+        $this->artisan('migrate')->run();
 
         $this->app['config']->set('juice-backups.includes', []);
         $this->app['config']->set('juice-backups.excludes', []);

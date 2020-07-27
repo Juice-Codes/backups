@@ -7,6 +7,7 @@ use Carbon\Carbon;
 use Exception;
 use Generator;
 use Illuminate\Console\Command;
+use Illuminate\Support\Str;
 use PharData;
 use Spatie\DbDumper\DbDumper;
 use Symfony\Component\Finder\Finder;
@@ -55,7 +56,7 @@ class RunCommand extends Command
             Carbon::now()->format('Y-m-d-H-i-s')
         );
 
-        $phar = new PharData(sprintf('%s.tar', tempnam(sys_get_temp_dir(), str_random(6))));
+        $phar = new PharData(sprintf('%s.tar', tempnam(sys_get_temp_dir(), Str::random(6))));
 
         $paths = [];
 
@@ -112,7 +113,7 @@ class RunCommand extends Command
         }
 
         return array_map(function ($path) {
-            return starts_with($path, getcwd())
+            return Str::startsWith($path, getcwd())
                 ? substr_replace($path, '', 0, strlen(getcwd()) + 1)
                 : $path;
         }, array_values(array_diff(
@@ -137,7 +138,7 @@ class RunCommand extends Command
             ++$offset;
 
             foreach (array_slice($dirs, $offset) as $against) {
-                if (starts_with($dir, $against)) {
+                if (Str::startsWith($dir, $against)) {
                     continue 2;
                 }
             }
@@ -158,7 +159,7 @@ class RunCommand extends Command
         $dirs = $this->directories('excludes');
 
         foreach ($dirs as $dir) {
-            if (starts_with($dir, $parent)) {
+            if (Str::startsWith($dir, $parent)) {
                 $result[] = trim(str_replace($parent, '', $dir), '/');
             }
         }
@@ -200,7 +201,7 @@ class RunCommand extends Command
             return null;
         }
 
-        $path = tempnam(sys_get_temp_dir(), str_random(6));
+        $path = tempnam(sys_get_temp_dir(), Str::random(6));
 
         $key = sprintf('database.connections.%s', config('database.default'));
 
